@@ -22,12 +22,6 @@ namespace RGlobal {
 	float old_fps = 1.f;
 }
 
-// class $modify(CCScheduler) {
-// 	void setTimeScale(float time_scale) {
-// 		CCScheduler::setTimeScale(RGlobal::speed);
-// 	}
-// };
-
 #include <vector>
 class RouletteObject : public CCLayer {
 private:
@@ -62,7 +56,7 @@ private:
 
 	CCLabelBMFont *_selectedObjectText;
 
-	CCSprite *_nadezhdin;
+	CCSprite *_pointer;
 
 	bool _shouldForce;
 
@@ -89,7 +83,7 @@ public:
 		_blackLeft = nullptr;
 		_blackRight = nullptr;
 
-		_nadezhdin = nullptr;
+		_pointer = nullptr;
 
 		_scalingPowerX = 2.5;
 		_scalingPowerY = 1.25;
@@ -144,7 +138,7 @@ public:
 
 		_selectedObjectText->runAction(CCFadeTo::create(0.5, 0));
 		_square07->runAction(CCFadeTo::create(0.5, 0));
-		_nadezhdin->runAction(CCFadeTo::create(0.5, 0));
+		_pointer->runAction(CCFadeTo::create(0.5, 0));
 		scheduleOnce(schedule_selector(RouletteObject::beginEnd4), 0.5);
 	}
 	void beginEnd2(float delta) {
@@ -205,6 +199,8 @@ public:
 
 		CCMenu *menu = _menu1;
 
+		int idx = 0;
+
 		for (auto str : _values) {
 			CCNode *nd = CCNode::create();
 
@@ -225,13 +221,16 @@ public:
 
 			std::vector<CCSprite *> lines;
 
+			float l1X = -l->getContentSize().height / 2;
+			float l2X = l->getContentSize().height / 2;
+
 			auto line1 = CCSprite::createWithSpriteFrameName("floorLine_001.png");
-			line1->setPosition({-l->getContentSize().height / 2, 0});
+			line1->setPosition({l1X, 0});
 			line1->setID("line-start");
 			lines.push_back(line1);
 
 			auto line2 = CCSprite::createWithSpriteFrameName("floorLine_001.png");
-			line2->setPosition({l->getContentSize().height / 2, 0});
+			line2->setPosition({l2X, 0});
 			line2->setID("line-end");
 			lines.push_back(line2);
 
@@ -247,16 +246,13 @@ public:
 			
 			_menu1->addChild(nd);
 			_menu2->addChild(nd);
+
+			idx++;
 		}
 
 		menu->alignItemsHorizontallyWithPadding(445.f / _values.size());
 
-		// printf("padding=%f\n", 445.f / text_sz_mid);
-
 		square07->setContentSize({0, 0});
-
-		// square07->runAction(CCActionTween::create(0.5, "contentSizeWidth", 0, 100));
-		// square07->runAction(CCActionTween::create(0.5, "contentSizeY", 0, 50));
 
 		scheduleUpdate();
 
@@ -269,23 +265,19 @@ public:
 		addChild(_blackLeft);
 		addChild(_blackRight);
 
-		// const auto& winSize = CCDirector::sharedDirector()->getWinSize();
-		// menu->setPosition(winSize / 2);
-
 		scheduleOnce(schedule_selector(RouletteObject::beginRotation), 1);
 
 		_square07 = square07;
 
-		_nadezhdin = CCSprite::createWithSpriteFrameName("floorLine_001.png");
+		_pointer = CCSprite::createWithSpriteFrameName("floorLine_001.png");
 		
-		_nadezhdin->setRotation(90);
-		_nadezhdin->setScaleX(0.2);
-		// _nadezhdin->setOpacity(128);
-		_nadezhdin->setColor(ccYELLOW);
-		_nadezhdin->setOpacity(0);
-		_nadezhdin->runAction(CCFadeTo::create(0.25f, 255));
+		_pointer->setRotation(90);
+		_pointer->setScaleX(0.2);
+		_pointer->setColor(ccYELLOW);
+		_pointer->setOpacity(0);
+		_pointer->runAction(CCFadeTo::create(0.25f, 255));
 
-		addChild(_nadezhdin);
+		addChild(_pointer);
 
 		_currentMenu = _menu1;
 
@@ -376,12 +368,11 @@ public:
 		int index = 0;
 
 		for (CCRect r : entries) {
-			if (_nadezhdin->getPositionX() > (r.origin.x - r.size.width / 2) && _nadezhdin->getPositionX() < (r.origin.x + r.size.width)) {
-				
+			if (_pointer->getPositionX() > (r.origin.x - r.size.width / 2) && _pointer->getPositionX() < (r.origin.x + r.size.width)) {
 				obj = children->objectAtIndex(index);
 				_selectedObject = dynamic_cast<CCNode *>(obj);
 
-				// break;
+				break;
 			}
 
 			index++;
@@ -449,19 +440,16 @@ public:
 
 			if (_menu1->getPositionX() < -(_menu1->getContentSize().width / 1.28)) {
 				_menu1->setPosition((_menu2->getContentSize().width / 1.28), 0);
-				// log::debug("menu 1 set!");
 				_currentMenu = _menu2;
 			}
 			if (_menu2->getPositionX() < -(_menu2->getContentSize().width / 1.28)) {
 				_menu2->setPosition((_menu1->getContentSize().width / 1.28), 0);
-				// log::debug("menu 2 set!");
 				_currentMenu = _menu1;
 			}
 
 			scheduleOnce(schedule_selector(RouletteObject::createRouletteInfo), 0);
 		}
 
-		// if (_rotationSpeed == 0.f) return;
 		_oldObject = _selectedObject;
 		_selectedObject = nullptr;
 
@@ -475,8 +463,6 @@ public:
 				txt->setColor(ccWHITE);
 
 				if (_selectedObjectText) {
-					// _selectedObjectText->setOpacity(255);
-					// _selectedObjectText->runAction(CCFadeTo::create(0.1f, 0));
 					_selectedObjectText->setString(" ", true);
 				}
 			}
@@ -520,32 +506,10 @@ public:
 
 			_oldActualObject = _selectedObject;
 		}
-
-		// printf("OBJECT AT %p\n", _selectedObject);
 	}
-
-	// void visit(void) override {
-	// 	glEnable(GL_SCISSOR_TEST);
-
-	// 	auto spos = _square07->getPosition();
-	// 	auto wpos = getParent()->convertToWorldSpace(_square07->getPosition());
-	// 	// auto winSize = CCDirector::sharedDirector()->getWinSize();
-
-	// 	// CCPoint wpos = {winSize.width - _square07->getContentSize().width, winSize.height - _square07->getContentSize().height};
-
-	// 	printf("wpos: %f %f\n", wpos.x, wpos.y);
-
-	// 	glScissor(wpos.x, wpos.y, _square07->getContentSize().width, _square07->getContentSize().height);
-
-	// 	CCNode::visit();
-
-	// 	glDisable(GL_SCISSOR_TEST);
-	// }
 };
 
 #include <map>
-
-
 
 class $modify(XPlayLayer, PlayLayer) {
 	float player_x_old;
@@ -569,7 +533,6 @@ class $modify(XPlayLayer, PlayLayer) {
 	std::map<std::string, std::function<void(XPlayLayer *)>> taskMapping;
 
 	void unloadPayload() {
-		unschedule(schedule_selector(XPlayLayer::selectRandomMode));
 		unschedule(schedule_selector(XPlayLayer::rotatingWorld));
 		unschedule(schedule_selector(XPlayLayer::roulette3DWorldLoop));
 		setRotation(0.f);
@@ -618,74 +581,6 @@ class $modify(XPlayLayer, PlayLayer) {
 	static void rouletteGiantPlayer(XPlayLayer *pl) {
 		pl->m_player1->setScale(3.f);
 	}
-	static void rouletteLobotomy(XPlayLayer *pl) {
-		log::debug("WIP");
-	}
-	static void roulette5FPS(XPlayLayer *pl) {
-		RGlobal::old_fps = CCDirector::sharedDirector()->getSecondsPerFrame();
-
-		CCDirector::sharedDirector()->setAnimationInterval(1.f / 5.f);
-	}
-
-	void selectRandomModeFly() {
-		std::vector<int> values = {
-			5, 0x13, 0x29, 0x40
-		};
-		std::map<int, int> keys = {
-			{5, 13}, {0x13, 111}, 
-			{0x29, 1933}, {0x40, 660}
-		};
-
-		int val = values[rand() % values.size()];
-
-		// log::debug("asking for {} (id={})", val, keys[val]);
-
-		GameObject *obj = GameObject::createWithKey(keys[val]);
-		obj->setPosition(m_player1->getPosition());
-
-		addObject(obj);
-
-		switchToFlyMode(m_player1, obj, true, val);
-	}
-	void selectRandomMode(float delta) {
-		int val = rand() % 4;
-
-		std::map<int, int> keys = {
-			{1, 748}, {2, 47}, {3, 1331}
-		};
-
-		GameObject *obj = nullptr;
-		if (val != 0 && val != 1) {
-			// log::debug("asking for {} (id={})", val, keys[val]);
-
-			obj = GameObject::createWithKey(keys[val]);
-			obj->setPosition(m_player1->getPosition());
-
-			addObject(obj);
-		}
-
-		switch(val) {
-			default:
-			// case 0: {
-			// 	selectRandomModeFly();
-			// 	break;
-			// }
-			case 1: {
-				switchToRobotMode(m_player1, obj, true);
-				break;
-			}
-			case 2: {
-				switchToRollMode(m_player1, obj, true);
-				break;
-			}
-			case 3: {
-				switchToSpiderMode(m_player1, obj, true);
-				break;
-			}
-		}
-
-		selectRandomModeFly();
-	}
 
 	void addTrash(float delta) {
 		GameObject *obj = GameObject::createWithKey(1331);
@@ -706,9 +601,6 @@ class $modify(XPlayLayer, PlayLayer) {
 		obj->setVisible(true);
 	}
 
-	static void rouletteModeEverySecond(XPlayLayer *pl) {
-		pl->schedule(schedule_selector(XPlayLayer::selectRandomMode), 1.f);
-	}
 	static void rouletteTrash(XPlayLayer *pl) {
 		pl->m_fields->_payloadRandomBlock = true;
 	}
@@ -758,50 +650,29 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		bool crazyEvents = Mod::get()->getSettingValue<bool>("crazy-events");
 
-		std::vector<std::string> values_old = {
-			"2x Speed", "3D Level", "Giant Icon", "0.5x Speed", "Do Nothing", "Trash", "Rotated\nGameplay"
+		std::vector<std::string> values = {
+			"3D Level", "Giant Icon", "Do Nothing", "Trash", "Rotated\nGameplay"
 		};
 
+		if (m_level->m_stars.value() == 0 || m_level->m_normalPercent.value() == 100) {
+			values.push_back("2x Speed");
+			values.push_back("0.5x Speed");
+		} 
+
 		if (crazyEvents) {
-			values_old.push_back("Close the\nGame");
-			values_old.push_back("Random Mode\nEvery Sec");
+			values.push_back("Close the\nGame");
 		}
 
-		std::vector<std::string> values = {};
-		std::vector<bool> values_took = {};
+		auto clock = std::chrono::system_clock::now();
+		auto seed = clock.time_since_epoch().count();
 
-		srand(time(0));
+		auto rng = std::default_random_engine(seed);
 
-		values_took.reserve(values_old.size());
-
-		for (size_t i = 0; i < values_old.size(); i++) {
-			int max_iters = values_old.size();
-
-			for (int j = 0; j < max_iters; j++) {
-				size_t idx = rand() % values_old.size();
-		
-				if (!values_took[idx]) {
-					values_took[idx] = true;
-					values.push_back(values_old[idx]);
-
-					break;
-				}
-			}
-		}
-		// std::vector<std::string> values = {
-		// 	"Random Mode\nEvery Sec", "Random Mode\nEvery Sec", "Random Mode\nEvery Sec"
-		// };
-
-		// auto rng = std::default_random_engine {(unsigned int)time(0)};
-		// std::shuffle(std::begin(values), std::end(values), rng);
+  		std::shuffle(values.begin(), values.end(), rng);
 
 		RouletteObject *robj = RouletteObject::create(values);
 
 		CCDirector::sharedDirector()->getScheduler()->setTimeScale(1.f);
-
-		// RouletteObject *robj = RouletteObject::create({
-		// 	"2x Speed", "2x Speed", "2x Speed", "2x Speed", "2x Speed", "2x Speed", "2x Speed"
-		// });
 
 		robj->setPosition(winSize / 2);
 
@@ -873,7 +744,6 @@ class $modify(XPlayLayer, PlayLayer) {
 		if (m_fields->player_x_delta != 0.f) m_fields->levelStarted = true;
 	}
 
-	// "2x Speed", "0.5x Speed", "Giant Icon", "5 FPS", "Lobotomy", "Do Nothing"
 	bool init(GJGameLevel *lvl, bool idk1, bool idk2) {
 		RGlobal::isEnd = false;
 		RGlobal::playLayer = this;
@@ -881,11 +751,8 @@ class $modify(XPlayLayer, PlayLayer) {
 		m_fields->taskMapping["2x Speed"] = XPlayLayer::rouletteDoubleSpeed;
 		m_fields->taskMapping["0.5x Speed"] = XPlayLayer::rouletteHalfSpeed;
 		m_fields->taskMapping["Giant Icon"] = XPlayLayer::rouletteGiantPlayer;
-		m_fields->taskMapping["5 FPS"] = XPlayLayer::roulette5FPS;
-		m_fields->taskMapping["Lobotomy"] = XPlayLayer::rouletteLobotomy;
 		m_fields->taskMapping["Do Nothing"] = XPlayLayer::rouletteDoNothing;
 		m_fields->taskMapping["3D Level"] = XPlayLayer::roulette3DLevel;
-		m_fields->taskMapping["Random Mode\nEvery Sec"] = XPlayLayer::rouletteModeEverySecond;
 		m_fields->taskMapping["Trash"] = XPlayLayer::rouletteTrash;
 		m_fields->taskMapping["Rotated\nGameplay"] = XPlayLayer::rouletteRotatingWorld;
 		m_fields->taskMapping["Close the\nGame"] = XPlayLayer::rouletteClose;
