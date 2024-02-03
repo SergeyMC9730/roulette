@@ -8,7 +8,7 @@
 # v1.0.1
 ## Gameplay Changes
  * `Random Mode Every Sec` event has been removed
- * `2x Speed` and `0.5x` are now enabled only in two cases:
+ * `2x Speed` and `0.5x` are now enabled in only two cases:
     * level is not rated;
     * level has been completed before.
  * Event list is now shuffled properly
