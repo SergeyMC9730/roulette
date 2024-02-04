@@ -48,7 +48,9 @@ private:
 	bool _rouletteStopping;
 	bool _rotationStarted;
 
-	CCLabelBMFont *_info;
+	// CCMenuItemSpriteExtra *_stopBtn;
+	// CCSprite *_stopBtnSpr;
+	CCNode *_stopBtnNode;
 
 	CCNode *_selectedObject;
 	CCNode *_oldObject;
@@ -77,16 +79,14 @@ public:
 
 		_rouletteStopping = false;
 
-		_info = nullptr;
-
 		_square07 = nullptr;
 		_blackLeft = nullptr;
 		_blackRight = nullptr;
 
 		_pointer = nullptr;
 
-		_scalingPowerX = 2.5;
-		_scalingPowerY = 1.25;
+		_scalingPowerX = 6.7;
+		_scalingPowerY = 3.6;
 
 		_infoCreated = false;
 
@@ -163,18 +163,52 @@ public:
 	}
 	void beginEnd() {
 		scheduleOnce(schedule_selector(RouletteObject::beginEnd2), 0.5);
+		_stopBtnNode->removeMeAndCleanup();
 		unscheduleUpdate();
 	}
 
 	void setupEndSound() {
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 		engine->playEffect("crystal01.ogg", 1.f, 0.5f, 0.5f);
+
 	}
 
 	void beginRotation(float delta) {
 		// _rotationSpeed = 60;
 		_canRotate = true;
 		_rotationStarted = true;
+	}
+
+	void updateRouletteStartAnim(float delta_) {
+		float delta = 0.05f;
+
+		float speed = 4 * delta * 20;
+
+		_scalingPowerX -= delta * speed;
+		_scalingPowerY -= delta * speed;
+
+		if (_scalingPowerX > 0) {
+			auto cs = _square07->getContentSize();
+			cs.width += _scalingPowerX * speed;
+
+			_square07->setContentSize(cs);
+		} else {
+			auto cs = _square07->getContentSize();
+			cs.width = 445.f;
+
+			_square07->setContentSize(cs);
+		}
+		if (_scalingPowerY > 0) {
+			auto cs = _square07->getContentSize();
+			cs.height += _scalingPowerY * speed;
+
+			_square07->setContentSize(cs);
+		} else {
+			auto cs = _square07->getContentSize();
+			cs.height = 110.f;
+
+			_square07->setContentSize(cs);
+		}
 	}
 
 	bool init() {
@@ -281,28 +315,21 @@ public:
 
 		_currentMenu = _menu1;
 
+		schedule(schedule_selector(RouletteObject::updateRouletteStartAnim), 0.05);
+
 		return true;
 	}
 
-	void setupRouletteInput() {
-		this->setKeyboardEnabled(true);
-	}
-
-	void stopRoulette() {
+	void stopRoulette(CCObject *obj) {
 		if (_rouletteStopping) return;
-
 		_rouletteStopping = true;
-		_info->runAction(CCFadeTo::create(0.5f, 0));
-	}
 
-	void keyDown(cocos2d::enumKeyCodes kc) override {
-		CCLayer::keyDown(kc);
+		CCSprite *black_square = dynamic_cast<CCSprite *>(_stopBtnNode->getChildByID("black-square"));
+		CCMenuItemSpriteExtra *stop_btn = dynamic_cast<CCMenuItemSpriteExtra *>(_stopBtnNode->getChildByIDRecursive("stop-button"));
 
-		if (!_infoCreated) return;
+		black_square->runAction(CCFadeTo::create(0.5f, 255));
 
-		if (kc == cocos2d::enumKeyCodes::KEY_Enter) {
-			stopRoulette();
-		}
+		stop_btn->setEnabled(false);
 	}
 
 	void createRouletteInfo(float delta) {
@@ -310,19 +337,36 @@ public:
 
 		_infoCreated = true;
 
-		CCLabelBMFont *txt = CCLabelBMFont::create("Press Enter to stop Roulette.", "bigFont.fnt");
+		auto btnSpr = ButtonSprite::create("Stop Roulette");
 
-		txt->setPositionX(0);
-		txt->setPositionY(-_square07->getContentSize().height + txt->getContentSize().height);
+		auto stopBtn = CCMenuItemSpriteExtra::create(btnSpr, this, menu_selector(RouletteObject::stopRoulette));
+		stopBtn->setID("stop-button");
 
-		txt->setScale(0.4f);
+		CCMenu *men = CCMenu::createWithItem(stopBtn);
+		men->setID("button-menu");
 
-		txt->setOpacity(0);
-		txt->runAction(CCFadeTo::create(0.5f, 255));
+		men->setPosition({0, 0});
 
-		addChild(txt);
+		CCSprite *black_square = CCSprite::create("square.png");
 
-		_info = txt;
+		black_square->setID("black-square");
+		black_square->setScaleX(40);
+		black_square->setScaleY(5);
+		black_square->setColor(ccBLACK);
+		black_square->setOpacity(255);
+		black_square->runAction(CCFadeTo::create(0.5f, 0));
+
+		_stopBtnNode = CCNode::create();
+
+		_stopBtnNode->setPositionX(0);
+		_stopBtnNode->setPositionY(-_square07->getContentSize().height + 15);
+
+		_stopBtnNode->addChild(men);
+		_stopBtnNode->addChild(black_square);
+
+		// men->setScale(0.5f);
+
+		addChild(_stopBtnNode);
 
 		_selectedObjectText = CCLabelBMFont::create("(Selected entry would be here.)", "chatFont.fnt");
 		_selectedObjectText->setPositionX(0);
@@ -334,8 +378,6 @@ public:
 		_selectedObjectText->runAction(CCFadeTo::create(0.5f, 255));
 
 		addChild(_selectedObjectText);
-
-		setupRouletteInput();
 	}
 
 	void setEndCallback(std::function<void(RouletteObject *)> callback) {
@@ -384,10 +426,6 @@ public:
 	void update(float delta) override {
 		CCNode::update(delta);
 
-		if (_rotationStarted) {
-			setupRouletteInput();
-		}
-
 		if (_rotationStarted && !_rouletteStopping && _rotationSpeed < 60.f && !_shouldForce) {
 			_rotationSpeed += delta * 15;
 		}
@@ -396,34 +434,6 @@ public:
 			_rotationSpeed -= delta * 10;
 
 			if (_rotationSpeed < 0) _rotationSpeed = 0;
-		}
-
-		float speed = 4;
-
-		_scalingPowerX -= delta * speed;
-		_scalingPowerY -= delta * speed;
-
-		if (_scalingPowerX > 0) {
-			auto cs = _square07->getContentSize();
-			cs.width += _scalingPowerX * speed;
-
-			_square07->setContentSize(cs);
-		} else {
-			auto cs = _square07->getContentSize();
-			cs.width = 445.f;
-
-			_square07->setContentSize(cs);
-		}
-		if (_scalingPowerY > 0) {
-			auto cs = _square07->getContentSize();
-			cs.height += _scalingPowerY * speed;
-
-			_square07->setContentSize(cs);
-		} else {
-			auto cs = _square07->getContentSize();
-			cs.height = 110.f;
-
-			_square07->setContentSize(cs);
 		}
 
 		if (_blackLeft != nullptr) {
@@ -532,14 +542,21 @@ class $modify(XPlayLayer, PlayLayer) {
 
 	std::map<std::string, std::function<void(XPlayLayer *)>> taskMapping;
 
-	void unloadPayload() {
+	void unloadPayload(bool ending) {
+		bool pernamentEffects = Mod::get()->getSettingValue<bool>("pernament-effects");
+
 		unschedule(schedule_selector(XPlayLayer::rotatingWorld));
 		unschedule(schedule_selector(XPlayLayer::roulette3DWorldLoop));
 		setRotation(0.f);
-		m_fields->_payloadRandomBlock = false;
+		if (ending || !pernamentEffects) m_fields->_payloadRandomBlock = false;
 		
 		CCDirector::sharedDirector()->getScheduler()->setTimeScale(1.f);
 		if (RGlobal::old_fps != 1.f) CCDirector::sharedDirector()->setAnimationInterval(RGlobal::old_fps);
+
+		if (ending || !pernamentEffects) {
+			RGlobal::old_fps = 1.f;
+			RGlobal::speed = 1.f;
+		}
 
 		setSkewX(0);
 		setSkewY(0);
@@ -606,7 +623,9 @@ class $modify(XPlayLayer, PlayLayer) {
 	}
 
 	void levelComplete() {
-		unloadPayload();
+		unloadPayload(true);
+		
+		_payloadRandomBlock = false;
 		
 		RGlobal::speed = 1;
 		RGlobal::isEnd = true;
@@ -697,7 +716,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		base->setOpacity(0);
 		base->runAction(CCFadeTo::create(0.5f, 255));
 
-		unloadPayload();
+		unloadPayload(false);
 		
 		m_fields->blackSquare = base;
 
@@ -715,7 +734,7 @@ class $modify(XPlayLayer, PlayLayer) {
 	}
 
 	void onQuit() {
-		unloadPayload();
+		unloadPayload(true);
 
 		PlayLayer::onQuit();
 	}

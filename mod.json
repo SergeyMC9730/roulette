@@ -1,6 +1,6 @@
 {
 	"geode": "2.0.0-beta.13",
-	"version": "v1.0.1",
+	"version": "v1.0.2",
 	"id": "dogotrigger.roulette",
 	"name": "Roulette",
 	"developer": "dogotrigger",
@@ -15,6 +15,12 @@
 		"crazy-events": {
 			"name": "Crazy Events",
 			"description": "Enables some crazy events.",
+			"type": "bool",
+			"default": false
+		},
+		"pernament-effects": {
+			"name": "Pernament Effects",
+			"description": "Some gameplay effects will stay enabled until level is completed.",
 			"type": "bool",
 			"default": false
 		}
