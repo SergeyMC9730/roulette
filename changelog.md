@@ -1,3 +1,7 @@
+# v1.1.1
+## Gameplay Changes
+ * Fixed Horror event
+
 # v1.1.0
 **QoL changes and additions for GD YouTubers.**
 ## Gameplay Changes

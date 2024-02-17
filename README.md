@@ -4,6 +4,10 @@
 
 **Additional events are the events that more critical to the game than the other ones.** They are disabled by default. Additional events can be enabled in Mod's settings.
 
+# v1.1.1
+## Gameplay Changes
+ * Fixed Horror event
+
 # v1.1.0
 **QoL changes and additions for GD YouTubers.**
 ## Gameplay Changes

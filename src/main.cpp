@@ -975,8 +975,6 @@ class $modify(XPlayLayer, PlayLayer) {
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 		engine->stopAllMusic();
 
-		Sleep(1500);
-
 		for (auto obj : pl->m_fields->_Tobj) {
 			obj->playSound();
 
