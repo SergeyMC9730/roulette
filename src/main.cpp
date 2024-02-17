@@ -8,6 +8,8 @@
 
 #include <Geode/binding/FModAudioEngine.hpp>
 
+#include <Geode/binding/GameManager.hpp>
+
 #include <functional>
 
 #include <algorithm>
@@ -20,7 +22,293 @@ namespace RGlobal {
 	void *playLayer = nullptr;
 	float speed = 1.f;
 	float old_fps = 1.f;
+
+	bool inHorrorMode = false;
+	bool inRoulette = false;
+
+	void fixCursor() {
+		CCDirector::sharedDirector()->getOpenGLView()->toggleLockCursor(false);
+		CCDirector::sharedDirector()->getOpenGLView()->showCursor(true);
+	}
 }
+
+class HorrorControllerNode : public CCNode {
+private:
+	std::vector<CCNode *> _shakingObjects;
+	std::map<CCNode *, CCPoint> _shakeDelta;
+	std::function<void(HorrorControllerNode *, void *)> _callback;
+	void *_ctx;
+	double _time;
+	double _randomJTime;
+public:
+	HorrorControllerNode() : CCNode() {
+		_shakingObjects = {};
+		_shakeDelta = {};
+		_callback = nullptr;
+		_time = 0;
+		// _randomJTime = (double)(rand() % 45);
+		_randomJTime = 48;
+		_ctx = nullptr;
+	}
+
+	static HorrorControllerNode *create(bool play_sound) {
+		auto ret = new HorrorControllerNode();
+
+		if (ret && ret->init(play_sound)) {
+			ret->autorelease();
+
+			return ret;
+		}
+
+		CC_SAFE_DELETE(ret);
+
+		return nullptr;
+	}
+
+	void addShakingObject(CCNode *obj) {
+		_shakingObjects.push_back(obj);
+	}
+
+	void resetTimer() {
+		_time = 0;
+	}
+
+	void setJumpscareCallback(std::function<void(HorrorControllerNode *, void *)> callback, void *ctx) {
+		_callback = callback;
+		_ctx = ctx;
+	}
+
+	void removeNodesAndCleanup(bool delete_objects) {
+		for (auto obj : _shakingObjects) {
+			if (delete_objects) {
+				obj->removeMeAndCleanup();
+			}
+		}
+
+		_shakingObjects = {};
+
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+		engine->stopAllMusic();
+	}
+
+	void playSound() {
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+		
+		engine->stopAllMusic();
+		engine->playMusic("geode/unzipped/dogotrigger.roulette/resources/dogotrigger.roulette/horror.mp3", true, 1.f, 0);
+	}
+	void playSoundJ() {
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+
+		engine->setChannelVolume(0, (AudioTargetType)0, 5.f);
+	}
+
+	bool init(bool play_sound) {
+		if (!CCNode::init()) return false;
+
+		scheduleUpdate();
+
+		if (play_sound) playSound();
+
+		return true;
+	}
+
+	void update(float delta) {
+		for (auto obj : _shakingObjects) {
+			bool _negX = rand() % 2;
+			bool _negY = rand() % 2;
+
+			int mulX = (_negX) ? -1 : 1;
+			int mulY = (_negY) ? -1 : 1;
+
+			int max = 6;
+
+			int x = (int)(rand() % max) * mulX;
+			int y = (int)(rand() % max) * mulY;
+
+			CCPoint d(x, y);
+			
+			if (_shakeDelta.contains(obj)) {
+				CCPoint old_pos = _shakeDelta[obj];
+
+				obj->setPositionX(obj->getPositionX() - old_pos.x);
+				obj->setPositionY(obj->getPositionY() - old_pos.y);
+			}
+			
+			obj->setPositionX(obj->getPositionX() + x);
+			obj->setPositionY(obj->getPositionY() + y);
+
+			_shakeDelta[obj] = d;
+		}
+
+		if (RGlobal::inRoulette) return;
+
+		_time += (double)delta;
+
+		log::debug("t: {}/{}", _time, _randomJTime);
+
+		if (_time > _randomJTime) {
+			// _randomJTime = (double)(rand() % 45);
+			_randomJTime = 48;
+			resetTimer();
+
+			playSoundJ();
+
+			if (_callback) _callback(this, _ctx);
+		}
+	}
+};
+
+class ToiletNode : public CCNode {
+private:
+	CCSprite *_toilet;
+
+	double _time;
+public:
+	ToiletNode() : CCNode() {
+		_toilet = nullptr;
+		_time = 0.f;
+	}
+
+	static ToiletNode *create() {
+		auto ret = new ToiletNode();
+
+		if (ret && ret->init()) {
+			ret->autorelease();
+
+			return ret;
+		}
+
+		CC_SAFE_DELETE(ret);
+
+		return nullptr;
+	}
+
+	void playSound() {
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+		
+		engine->playEffect("geode/unzipped/dogotrigger.roulette/resources/dogotrigger.roulette/Tada.mp3", 1.f, 1.f, 1.f);
+	}
+
+	bool init() {
+		if (!CCNode::init()) return false;
+
+		_toilet = CCSprite::create("Toilet.png"_spr);
+
+		addChild(_toilet);
+
+		scheduleUpdate();
+
+		return true;
+	}
+
+	CCSprite *getToiletSprite() {
+		return _toilet;
+	}
+
+	void update(float delta) {
+		_time += (double)delta;
+
+		// _toilet->setRotation(sin(_time * 2) * 10.f);
+		_toilet->setPositionY(sin(_time * 2) * 20.f);
+	}
+};
+
+class NormalFaceLayer : public CCLayer {
+private:
+	float _currentVol;
+	bool _playSound;
+public:
+	NormalFaceLayer(bool play_sound) : CCLayer() {
+		_currentVol = 1.f;
+		_playSound = play_sound;
+	}
+
+	static NormalFaceLayer *create(bool play_sound) {
+		auto ret = new NormalFaceLayer(play_sound);
+
+		if (ret && ret->init()) {
+			ret->autorelease();
+
+			return ret;
+		}
+
+		CC_SAFE_DELETE(ret);
+
+		return nullptr;
+	}
+
+	void animEnd(float delta) {
+		removeMeAndCleanup();
+	}
+
+	void playSound(float delta) {
+		std::string sound_name = "sfx/s4451.ogg";
+		std::string sound_path = "Resources/" + sound_name;
+
+		if (!std::filesystem::exists(sound_path)) return;
+
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+		engine->playEffect(sound_name, 1.f, 1.f, _currentVol);
+
+		float cv = _currentVol * 100.f;
+
+		switch((int)cv) {
+			case 100: {
+				_currentVol = 0.5f;
+				break;
+			}
+			case 50: {
+				_currentVol = 0.25f;
+				break;
+			}
+			case 25: {
+				_currentVol = 0.05;
+				break;
+			}
+			case 5: {
+				_currentVol = 0.02;
+				break;
+			}
+			case 2: {
+				_currentVol = 0.01;
+				break;
+			}
+			case 0: {}
+			case 1: {
+				_currentVol = 0.00;
+				break;
+			}
+			default: {
+				break;
+			}
+		}
+	}
+
+	bool init() {
+		if (!CCLayer::init()) return false;
+
+		auto spr = CCSprite::createWithSpriteFrameName("diffIcon_02_btn_001.png");
+
+		spr->setID("face");
+		spr->setScale(0.f);
+
+		float time = 1.5f;
+
+		spr->runAction(CCEaseExponentialOut::create(CCScaleTo::create(time, 20.f)));
+
+		scheduleOnce(schedule_selector(NormalFaceLayer::animEnd), time);
+		spr->runAction(CCFadeTo::create(time, 0.f));
+
+		if (_playSound) {
+			schedule(schedule_selector(NormalFaceLayer::playSound), 0.2f, 5, 0.f);
+		}
+
+		addChild(spr);
+
+		return true;
+	}
+};
 
 #include <vector>
 class RouletteObject : public CCLayer {
@@ -170,7 +458,6 @@ public:
 	void setupEndSound() {
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 		engine->playEffect("crystal01.ogg", 1.f, 0.5f, 0.5f);
-
 	}
 
 	void beginRotation(float delta) {
@@ -426,6 +713,8 @@ public:
 	void update(float delta) override {
 		CCNode::update(delta);
 
+		RGlobal::fixCursor();
+
 		if (_rotationStarted && !_rouletteStopping && _rotationSpeed < 60.f && !_shouldForce) {
 			_rotationSpeed += delta * 15;
 		}
@@ -521,6 +810,11 @@ public:
 
 #include <map>
 
+// class TouletteAppereance {
+// public:
+// 	bool placedRight;
+// };
+
 class $modify(XPlayLayer, PlayLayer) {
 	float player_x_old;
 	float player_x_new;
@@ -529,12 +823,16 @@ class $modify(XPlayLayer, PlayLayer) {
 	bool levelStarted;
 	bool rouletteStarted;
 
+	bool shouldHideCursor = false;
+
 	CCNode *rouletteNode;
 	CCSprite *blackSquare;
 
 	std::string task;
 
 	RouletteObject *_Robj;
+
+	std::vector<ToiletNode *> _Tobj;
 
 	bool _payloadRandomBlock = false;
 
@@ -547,7 +845,11 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		unschedule(schedule_selector(XPlayLayer::rotatingWorld));
 		unschedule(schedule_selector(XPlayLayer::roulette3DWorldLoop));
+		unschedule(schedule_selector(XPlayLayer::rouletteGiantPlayerLoop));
+		unschedule(schedule_selector(XPlayLayer::rouletteLobotomyBegin));
+
 		setRotation(0.f);
+
 		if (ending || !pernamentEffects) m_fields->_payloadRandomBlock = false;
 		
 		CCDirector::sharedDirector()->getScheduler()->setTimeScale(1.f);
@@ -595,8 +897,11 @@ class $modify(XPlayLayer, PlayLayer) {
 		RGlobal::speed = 2;
 		CCDirector::sharedDirector()->getScheduler()->setTimeScale(2.0f);
 	}
+	void rouletteGiantPlayerLoop(float delta) {
+		m_player1->setScale(3.f);
+	}
 	static void rouletteGiantPlayer(XPlayLayer *pl) {
-		pl->m_player1->setScale(3.f);
+		pl->schedule(schedule_selector(XPlayLayer::rouletteGiantPlayerLoop));
 	}
 
 	void addTrash(float delta) {
@@ -622,6 +927,139 @@ class $modify(XPlayLayer, PlayLayer) {
 		pl->m_fields->_payloadRandomBlock = true;
 	}
 
+	void rouletteLobotomy01(float delta) {
+		auto js = NormalFaceLayer::create(true);
+		const auto& winSize = CCDirector::sharedDirector()->getWinSize();
+
+		js->setPosition(winSize / 2);
+
+		addChild(js, 99999);
+	}
+	void rouletteLobotomy02(float delta) {
+		auto js = NormalFaceLayer::create(true);
+		const auto& winSize = CCDirector::sharedDirector()->getWinSize();
+
+		js->setPosition(winSize / 4);
+
+		addChild(js, 99999);
+	}
+	void rouletteLobotomy03(float delta) {
+		auto js = NormalFaceLayer::create(true);
+		const auto& winSize = CCDirector::sharedDirector()->getWinSize();
+
+		js->setPosition(winSize);
+
+		addChild(js, 99999);
+	}
+	void rouletteLobotomy04(float delta) {
+		auto js = NormalFaceLayer::create(true);
+
+		addChild(js, 99999);
+	}
+
+	void rouletteLobotomyBegin(float delta) {
+		schedule(schedule_selector(XPlayLayer::rouletteLobotomy01), 0.f, 0, 0.0f);
+		schedule(schedule_selector(XPlayLayer::rouletteLobotomy02), 0.f, 0, 0.2f);
+		schedule(schedule_selector(XPlayLayer::rouletteLobotomy03), 0.f, 0, 0.4f);
+		schedule(schedule_selector(XPlayLayer::rouletteLobotomy04), 0.f, 0, 0.6f);
+	}
+
+	static void rouletteLobotomy(XPlayLayer *pl) {
+		pl->rouletteLobotomyBegin(0.f);
+		pl->schedule(schedule_selector(XPlayLayer::rouletteLobotomyBegin), 4.f);
+	}
+
+	static void rouletteHorrorCallback(HorrorControllerNode *nd, void *ctx) {
+		XPlayLayer *pl = static_cast<XPlayLayer *>(ctx);
+
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+		engine->stopAllMusic();
+
+		Sleep(1500);
+
+		for (auto obj : pl->m_fields->_Tobj) {
+			obj->playSound();
+
+			float time = 1.5f;
+
+			obj->runAction(CCEaseExponentialOut::create(CCScaleTo::create(time, 30.f)));
+			obj->getToiletSprite()->runAction(CCFadeTo::create(time, 0.f));
+		}
+
+		auto ndh_ = pl->getChildByIDRecursive("horror-controller");
+
+		if (ndh_) {
+			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+
+			ndh->removeNodesAndCleanup(false);
+			ndh->removeMeAndCleanup();
+		}
+
+		pl->m_fields->_Tobj = {};
+	}
+
+	void rouletteHorrorEnd(float delta) {
+		auto ndh_ = getChildByIDRecursive("horror-controller");
+
+		if (ndh_) {
+			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+
+			ndh->removeNodesAndCleanup(true);
+			ndh->removeMeAndCleanup();
+		}
+
+		m_fields->_Tobj = {};
+	}
+
+	static void rouletteHorror(XPlayLayer *pl) {
+		ToiletNode *nd = ToiletNode::create();
+
+		HorrorControllerNode *ndh;
+
+		if (!pl->getChildByIDRecursive("horror-controller")) {
+			ndh = HorrorControllerNode::create(true);
+			ndh->setJumpscareCallback(XPlayLayer::rouletteHorrorCallback, pl);
+			ndh->setID("horror-controller");
+
+			pl->addChild(ndh);
+
+			RGlobal::inHorrorMode = true;
+		} else {
+			auto ndh_ = pl->getChildByIDRecursive("horror-controller");
+
+			ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+
+			RGlobal::inHorrorMode = true;
+		}
+
+		const auto& winSize = CCDirector::sharedDirector()->getWinSize();
+
+		nd->setPosition(winSize / 2);
+		// nd->setPositionX(winSize.width - nd->getToiletSprite()->getTextureRect().getMaxX() - 50.f);
+
+		bool right = rand() % 2;
+
+		if (right) {
+			nd->runAction(CCEaseInOut::create(CCMoveTo::create(
+				1.f, {winSize.width - nd->getToiletSprite()->getTextureRect().getMaxX(), nd->getPositionY()}
+			), 2.f));
+		} else {
+			nd->runAction(CCEaseInOut::create(CCMoveTo::create(
+				1.f, {nd->getToiletSprite()->getTextureRect().getMaxX(), nd->getPositionY()}
+			), 2.f));
+		}
+
+		// nd->setID(fmt::format("toiletnd_{}_{}", right, ));
+
+		ndh->addShakingObject(nd);
+
+		// pl->schedule(schedule_selector(XPlayLayer::rouletteHorrorEnd), 0.f, 0, 60000.f);
+
+		pl->addChild(nd, 99999);
+		
+		pl->m_fields->_Tobj.push_back(nd);
+	}
+
 	void levelComplete() {
 		unloadPayload(true);
 		
@@ -636,9 +1074,9 @@ class $modify(XPlayLayer, PlayLayer) {
 	void endRoulette2(float delta) {
 		m_fields->rouletteNode->removeMeAndCleanup();
 
-		// log::debug("selected entry is {}", m_fields->task);
+		RGlobal::inRoulette = false;
 
-		auto func = m_fields->taskMapping[m_fields->task];
+		// log::debug("selected entry is {}", m_fields->task);
 
 		m_fields->levelStarted = false;
 		RGlobal::isEnd = false;
@@ -647,12 +1085,26 @@ class $modify(XPlayLayer, PlayLayer) {
 		scheduleUpdate();
 
 		resetLevel();
+ 
+		if (m_fields->taskMapping.contains(m_fields->task)) {
+			auto func = m_fields->taskMapping[m_fields->task];
 
-		func(this);
+			func(this);
+		}
 
 		m_fields->levelStarted = true;
 
 		CCDirector::sharedDirector()->getScheduler()->setTimeScale(RGlobal::speed);
+
+		log::debug("inHorrorMode: {}", RGlobal::inHorrorMode);
+
+		if (RGlobal::inHorrorMode) {
+			auto ndh_ = getChildByIDRecursive("horror-controller");
+			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+			
+			ndh->playSound();
+			ndh->resetTimer();
+		}
 	}
 
 	static void endRoulette(RouletteObject *obj) {
@@ -669,17 +1121,52 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		bool crazyEvents = Mod::get()->getSettingValue<bool>("crazy-events");
 
-		std::vector<std::string> values = {
-			"3D Level", "Giant Icon", "Do Nothing", "Trash", "Rotated\nGameplay"
+		std::vector<std::string> values_total = {
+			"3D Level", "Giant Icon", 
+			"Do Nothing", "Trash", 
+			"Rotated\nGameplay", 
+			"Lobotomy", "Horror"
 		};
 
+		std::vector<std::string> values = {};
+
+		std::map<int, bool> valmap = {};
+
+		srand(time(0));
+
+		// // get random 5 events from main list
+		// int i = 0;
+		// while (i < 5) {
+		// 	int idx = rand() % values_total.size();
+
+		// 	if (!valmap.count(idx)) {
+		// 		valmap[idx] = true;
+
+		// 		values.push_back(values_total.at(idx));
+
+		// 		i++;
+		// 	}
+		// }
+		values = values_total;
+
+		// add additional events
+
 		if (m_level->m_stars.value() == 0 || m_level->m_normalPercent.value() == 100) {
-			values.push_back("2x Speed");
-			values.push_back("0.5x Speed");
+			bool do_default = rand() % 2;
+			do_default = true;
+
+			if (do_default) {
+				values.push_back("2x Speed");
+				values.push_back("0.5x Speed");
+			} else {
+				// for v1.1.1
+				values.push_back("2x Speed");
+				values.push_back("Random Speed");
+			}
 		} 
 
 		if (crazyEvents) {
-			values.push_back("Close the\nGame");
+			values.push_back("Close Game");
 		}
 
 		auto clock = std::chrono::system_clock::now();
@@ -704,6 +1191,12 @@ class $modify(XPlayLayer, PlayLayer) {
 
 	void beginRoulette() {
 		if (m_fields->rouletteStarted) return;
+
+		RGlobal::inRoulette = true;
+
+		// m_fields->shouldHideCursor = GameManager::sharedState()->getGameVariable("gv_0024");
+
+		// log::debug("gv_0026 is {}", m_fields->shouldHideCursor);
 
 		m_fields->rouletteStarted = true;
 
@@ -740,12 +1233,15 @@ class $modify(XPlayLayer, PlayLayer) {
 	}
 
 	void resetLevel() {
-		if (m_fields->levelStarted && !RGlobal::isEnd) {
+		bool softEnable = Mod::get()->getSettingValue<bool>("soft-enable");
+
+		if (m_fields->levelStarted && !RGlobal::isEnd && softEnable) {
 			// onQuit();
 			beginRoulette();
 		} else {
 			PlayLayer::resetLevel();
 			RGlobal::isEnd = false;
+			RGlobal::inHorrorMode = false;
 		}
 	}
 	void updateVisibility(float delta) {
@@ -766,6 +1262,7 @@ class $modify(XPlayLayer, PlayLayer) {
 	bool init(GJGameLevel *lvl, bool idk1, bool idk2) {
 		RGlobal::isEnd = false;
 		RGlobal::playLayer = this;
+		RGlobal::inHorrorMode = false;
 
 		m_fields->taskMapping["2x Speed"] = XPlayLayer::rouletteDoubleSpeed;
 		m_fields->taskMapping["0.5x Speed"] = XPlayLayer::rouletteHalfSpeed;
@@ -774,7 +1271,9 @@ class $modify(XPlayLayer, PlayLayer) {
 		m_fields->taskMapping["3D Level"] = XPlayLayer::roulette3DLevel;
 		m_fields->taskMapping["Trash"] = XPlayLayer::rouletteTrash;
 		m_fields->taskMapping["Rotated\nGameplay"] = XPlayLayer::rouletteRotatingWorld;
-		m_fields->taskMapping["Close the\nGame"] = XPlayLayer::rouletteClose;
+		m_fields->taskMapping["Close Game"] = XPlayLayer::rouletteClose;
+		m_fields->taskMapping["Lobotomy"] = XPlayLayer::rouletteLobotomy;
+		m_fields->taskMapping["Horror"] = XPlayLayer::rouletteHorror;
 
 		return PlayLayer::init(lvl, idk1, idk2);
 	}
