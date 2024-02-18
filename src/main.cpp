@@ -39,15 +39,14 @@ private:
 	std::function<void(HorrorControllerNode *, void *)> _callback;
 	void *_ctx;
 	double _time;
-	double _randomJTime;
+	double _jTime;
 public:
 	HorrorControllerNode() : CCNode() {
 		_shakingObjects = {};
 		_shakeDelta = {};
 		_callback = nullptr;
 		_time = 0;
-		// _randomJTime = (double)(rand() % 45);
-		_randomJTime = 48;
+		_jTime = 48;
 		_ctx = nullptr;
 	}
 
@@ -70,7 +69,8 @@ public:
 	}
 
 	void resetTimer() {
-		_time = 0;
+		unschedule(schedule_selector(HorrorControllerNode::onJumpscare));
+		schedule(schedule_selector(HorrorControllerNode::onJumpscare), 0.f, 0, _jTime);
 	}
 
 	void setJumpscareCallback(std::function<void(HorrorControllerNode *, void *)> callback, void *ctx) {
@@ -113,6 +113,10 @@ public:
 		return true;
 	}
 
+	void onJumpscare(float delta) {
+		if (_callback) _callback(this, _ctx);
+	}
+
 	void update(float delta) {
 		for (auto obj : _shakingObjects) {
 			bool _negX = rand() % 2;
@@ -143,19 +147,7 @@ public:
 
 		if (RGlobal::inRoulette) return;
 
-		_time += (double)delta;
-
-		log::debug("t: {}/{}", _time, _randomJTime);
-
-		if (_time > _randomJTime) {
-			// _randomJTime = (double)(rand() % 45);
-			_randomJTime = 48;
-			resetTimer();
-
-			playSoundJ();
-
-			if (_callback) _callback(this, _ctx);
-		}
+		schedule(schedule_selector(HorrorControllerNode::onJumpscare), 0.f, 0, _jTime);	
 	}
 };
 
@@ -847,6 +839,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		unschedule(schedule_selector(XPlayLayer::roulette3DWorldLoop));
 		unschedule(schedule_selector(XPlayLayer::rouletteGiantPlayerLoop));
 		unschedule(schedule_selector(XPlayLayer::rouletteLobotomyBegin));
+		unschedule(schedule_selector(XPlayLayer::randomSpeed));
 
 		setRotation(0.f);
 
@@ -872,6 +865,19 @@ class $modify(XPlayLayer, PlayLayer) {
 	}
 	static void rouletteRotatingWorld(XPlayLayer *pl) {
 		pl->schedule(schedule_selector(XPlayLayer::rotatingWorld));
+	}
+
+	void randomSpeed(float delta) {
+		double r = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);
+
+		r *= 3.5;
+		r += 0.1;
+
+		RGlobal::speed = r;
+		CCDirector::sharedDirector()->getScheduler()->setTimeScale((float)r);
+	}
+	static void rouletteRandomSpeed(XPlayLayer *pl) {
+		pl->schedule(schedule_selector(XPlayLayer::randomSpeed));
 	}
 
 	static void rouletteDoNothing(XPlayLayer *pl) {}
@@ -1061,7 +1067,7 @@ class $modify(XPlayLayer, PlayLayer) {
 	void levelComplete() {
 		unloadPayload(true);
 		
-		_payloadRandomBlock = false;
+		m_fields->_payloadRandomBlock = false;
 		
 		RGlobal::speed = 1;
 		RGlobal::isEnd = true;
@@ -1151,16 +1157,10 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		if (m_level->m_stars.value() == 0 || m_level->m_normalPercent.value() == 100) {
 			bool do_default = rand() % 2;
-			do_default = true;
 
-			if (do_default) {
-				values.push_back("2x Speed");
-				values.push_back("0.5x Speed");
-			} else {
-				// for v1.1.1
-				values.push_back("2x Speed");
-				values.push_back("Random Speed");
-			}
+			values.push_back("2x Speed");
+			values.push_back("0.5x Speed");
+			values.push_back("Random Speed");
 		} 
 
 		if (crazyEvents) {
@@ -1272,6 +1272,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		m_fields->taskMapping["Close Game"] = XPlayLayer::rouletteClose;
 		m_fields->taskMapping["Lobotomy"] = XPlayLayer::rouletteLobotomy;
 		m_fields->taskMapping["Horror"] = XPlayLayer::rouletteHorror;
+		m_fields->taskMapping["Random Speed"] = XPlayLayer::rouletteRandomSpeed;
 
 		return PlayLayer::init(lvl, idk1, idk2);
 	}
