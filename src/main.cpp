@@ -6,7 +6,7 @@
 
 #include <Geode/modify/CCScheduler.hpp>
 
-#include <Geode/binding/FModAudioEngine.hpp>
+#include <Geode/binding/FMODAudioEngine.hpp>
 
 #include <Geode/binding/GameManager.hpp>
 
@@ -490,7 +490,7 @@ public:
 		}
 	}
 
-	bool init() {
+	bool init() override {
 		std::vector<CCScale9Sprite *> squares = {
 			CCScale9Sprite::create("square.png"), CCScale9Sprite::create("square.png")
 		};
@@ -853,8 +853,10 @@ class $modify(XPlayLayer, PlayLayer) {
 			RGlobal::speed = 1.f;
 		}
 
-		setSkewX(0);
-		setSkewY(0);
+		CCScene *scene = CCScene::get();
+
+		scene->setSkewX(0);
+		scene->setSkewY(0);
 		setScale(1.f);
 
 		m_fields->_time = 0.f;
@@ -894,7 +896,9 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		float tm = sin(m_fields->_time);
 
-		setSkewX(tm * 24.f);
+		// setSkewX(tm * 24.f);
+		CCScene *scene = CCScene::get();
+		scene->setSkewX(tm * 24.f);
 	}
 	static void roulette3DLevel(XPlayLayer *pl) {
 		pl->schedule(schedule_selector(XPlayLayer::roulette3DWorldLoop));
@@ -1230,10 +1234,14 @@ class $modify(XPlayLayer, PlayLayer) {
 		PlayLayer::onQuit();
 	}
 
+	bool isPlayerDead() {
+		return m_player1->m_isDead || m_player2->m_isDead;
+	}
+
 	void resetLevel() {
 		bool softEnable = Mod::get()->getSettingValue<bool>("soft-enable");
 
-		if (m_fields->levelStarted && !RGlobal::isEnd && softEnable) {
+		if (m_fields->levelStarted && !RGlobal::isEnd && softEnable && isPlayerDead()) {
 			// onQuit();
 			beginRoulette();
 		} else {

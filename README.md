@@ -4,6 +4,12 @@
 
 **Additional events are the events that more critical to the game than the other ones.** They are disabled by default. Additional events can be enabled in Mod's settings.
 
+# v1.1.3
+## Gameplay Changes
+ * Fixed platformer mode bug
+## Techincal Changes
+ * Fixed typo in `mod.info`
+
 # v1.1.2
 ## Gameplay Changes
  * Fixed level end crash
