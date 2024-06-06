@@ -32,6 +32,8 @@ namespace RGlobal {
 	}
 }
 
+#define WITH_FMOD 0
+
 class HorrorControllerNode : public CCNode {
 private:
 	std::vector<CCNode *> _shakingObjects;
@@ -87,20 +89,25 @@ public:
 
 		_shakingObjects = {};
 
+#if WITH_FMOD == 1
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 		engine->stopAllMusic();
+#endif
 	}
 
 	void playSound() {
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
-		
+#if WITH_FMOD == 1
 		engine->stopAllMusic();
 		engine->playMusic("geode/unzipped/dogotrigger.roulette/resources/dogotrigger.roulette/horror.mp3", true, 1.f, 0);
+#endif
 	}
 	void playSoundJ() {
+#if WITH_FMOD == 1
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 
 		engine->setChannelVolume(0, (AudioTargetType)0, 5.f);
+#endif
 	}
 
 	bool init(bool play_sound) {
@@ -808,29 +815,31 @@ public:
 // };
 
 class $modify(XPlayLayer, PlayLayer) {
-	float player_x_old;
-	float player_x_new;
-	float player_x_delta;
+	struct Fields {
+		float player_x_old;
+		float player_x_new;
+		float player_x_delta;
 
-	bool levelStarted;
-	bool rouletteStarted;
+		bool levelStarted;
+		bool rouletteStarted;
 
-	bool shouldHideCursor = false;
+		bool shouldHideCursor = false;
 
-	CCNode *rouletteNode;
-	CCSprite *blackSquare;
+		CCNode *rouletteNode;
+		CCSprite *blackSquare;
 
-	std::string task;
+		std::string task;
 
-	RouletteObject *_Robj;
+		RouletteObject *_Robj;
 
-	std::vector<ToiletNode *> _Tobj;
+		std::vector<ToiletNode *> _Tobj;
 
-	bool _payloadRandomBlock = false;
+		bool _payloadRandomBlock = false;
 
-	float _time = 0.f;
+		float _time = 0.f;
 
-	std::map<std::string, std::function<void(XPlayLayer *)>> taskMapping;
+		std::map<std::string, std::function<void(XPlayLayer *)>> taskMapping;
+	};
 
 	void unloadPayload(bool ending) {
 		bool pernamentEffects = Mod::get()->getSettingValue<bool>("pernament-effects");
@@ -982,8 +991,10 @@ class $modify(XPlayLayer, PlayLayer) {
 	static void rouletteHorrorCallback(HorrorControllerNode *nd, void *ctx) {
 		XPlayLayer *pl = static_cast<XPlayLayer *>(ctx);
 
+#if WITH_FMOD == 1
 		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
 		engine->stopAllMusic();
+#endif
 
 		for (auto obj : pl->m_fields->_Tobj) {
 			obj->playSound();
