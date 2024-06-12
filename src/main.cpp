@@ -27,8 +27,10 @@ namespace RGlobal {
 	bool inRoulette = false;
 
 	void fixCursor() {
+#ifdef _WIN32
 		CCDirector::sharedDirector()->getOpenGLView()->toggleLockCursor(false);
 		CCDirector::sharedDirector()->getOpenGLView()->showCursor(true);
+#endif
 	}
 }
 
@@ -901,7 +903,9 @@ class $modify(XPlayLayer, PlayLayer) {
 
 	static void rouletteDoNothing(XPlayLayer *pl) {}
 	static void rouletteClose(XPlayLayer *pl) {
+#ifdef _WIN32
 		CCApplication::sharedApplication()->shutdownApplication();
+#endif
 		exit(0);
 	}
 	static void rouletteHalfSpeed(XPlayLayer *pl) {
