@@ -32,8 +32,6 @@ namespace RGlobal {
 	}
 }
 
-#define WITH_FMOD 0
-
 class HorrorControllerNode : public CCNode {
 private:
 	std::vector<CCNode *> _shakingObjects;
@@ -42,6 +40,28 @@ private:
 	void *_ctx;
 	double _time;
 	double _jTime;
+
+	void stopAllMusic() {
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+#ifdef _WIN32
+		// engine->clearAllAudio();
+#endif
+#ifdef __ANDROID__
+		engine->stopAllMusic();
+#endif
+	}
+
+	void playMusic(std::string path, bool repeat, float vol, int idk) {
+		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
+#ifdef _WIN32
+		// engine->loadMusic(path);
+		// auto channel = engine->getActiveMusicChannel(0);
+		// channel->setPaused(false);
+#endif
+#ifdef __ANDROID__
+		engine->playMusic(path, repeat, vol, idk);
+#endif
+	}
 public:
 	HorrorControllerNode() : CCNode() {
 		_shakingObjects = {};
@@ -89,25 +109,12 @@ public:
 
 		_shakingObjects = {};
 
-#if WITH_FMOD == 1
-		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
-		engine->stopAllMusic();
-#endif
+		stopAllMusic();
 	}
 
 	void playSound() {
-		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
-#if WITH_FMOD == 1
-		engine->stopAllMusic();
-		engine->playMusic("geode/unzipped/dogotrigger.roulette/resources/dogotrigger.roulette/horror.mp3", true, 1.f, 0);
-#endif
-	}
-	void playSoundJ() {
-#if WITH_FMOD == 1
-		FMODAudioEngine *engine = FMODAudioEngine::sharedEngine();
-
-		engine->setChannelVolume(0, (AudioTargetType)0, 5.f);
-#endif
+		stopAllMusic();
+		playMusic("geode/unzipped/dogotrigger.roulette/resources/dogotrigger.roulette/horror.mp3", true, 1.f, 0);
 	}
 
 	bool init(bool play_sound) {
@@ -310,6 +317,7 @@ public:
 };
 
 #include <vector>
+
 class RouletteObject : public CCLayer {
 private:
 	std::vector<std::string> _values;
