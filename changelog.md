@@ -1,8 +1,11 @@
-# v1.1.4
+# v1.1.5
 ## Techincal Changes
- * Port for GD `2.206`
  * Minimal Geode version has been switched to `3.0.0-alpha.2`
  * Added Android support
+
+# v1.1.4
+## Techincal Changes
+ * Minimal Geode version has been switched to `3.0.0-alpha.1`
 
 # v1.1.3
 ## Gameplay Changes
