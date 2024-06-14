@@ -413,7 +413,7 @@ public:
 
 	std::string getSelectedEntry() {
 		if (_selectedObject != nullptr) {
-			CCLabelBMFont *txt = dynamic_cast<CCLabelBMFont *>(_selectedObject->getChildByID("text"));
+			CCLabelBMFont *txt = typeinfo_cast<CCLabelBMFont *>(_selectedObject->getChildByID("text"));
 
 			std::string str = txt->getString();
 
@@ -443,12 +443,12 @@ public:
 		CCObject *obj;
 
 		CCARRAY_FOREACH(children, obj) {
-			CCNode *nd = dynamic_cast<CCNode *>(obj);
+			CCNode *nd = typeinfo_cast<CCNode *>(obj);
 
-			CCSprite *line_start = dynamic_cast<CCSprite *>(nd->getChildByID("line-start"));
-			CCSprite *line_end = dynamic_cast<CCSprite *>(nd->getChildByID("line-end"));
+			CCSprite *line_start = typeinfo_cast<CCSprite *>(nd->getChildByID("line-start"));
+			CCSprite *line_end = typeinfo_cast<CCSprite *>(nd->getChildByID("line-end"));
 
-			CCLabelBMFont *txt = dynamic_cast<CCLabelBMFont *>(nd->getChildByID("text"));
+			CCLabelBMFont *txt = typeinfo_cast<CCLabelBMFont *>(nd->getChildByID("text"));
 		
 			line_start->runAction(CCFadeTo::create(0.5, 0));
 			line_end->runAction(CCFadeTo::create(0.5, 0));
@@ -620,8 +620,8 @@ public:
 		if (_rouletteStopping) return;
 		_rouletteStopping = true;
 
-		CCSprite *black_square = dynamic_cast<CCSprite *>(_stopBtnNode->getChildByID("black-square"));
-		CCMenuItemSpriteExtra *stop_btn = dynamic_cast<CCMenuItemSpriteExtra *>(_stopBtnNode->getChildByIDRecursive("stop-button"));
+		CCSprite *black_square = typeinfo_cast<CCSprite *>(_stopBtnNode->getChildByID("black-square"));
+		CCMenuItemSpriteExtra *stop_btn = typeinfo_cast<CCMenuItemSpriteExtra *>(_stopBtnNode->getChildByIDRecursive("stop-button"));
 
 		black_square->runAction(CCFadeTo::create(0.5f, 255));
 
@@ -689,7 +689,7 @@ public:
 		std::vector<CCRect> entries;
 
 		CCARRAY_FOREACH(children, obj) {
-			CCNode *nd = dynamic_cast<CCNode *>(obj);
+			CCNode *nd = typeinfo_cast<CCNode *>(obj);
 			
 			CCNode *line_start = nd->getChildByID("line-start");
 			CCNode *line_end = nd->getChildByID("line-end");
@@ -708,7 +708,7 @@ public:
 		for (CCRect r : entries) {
 			if (_pointer->getPositionX() > (r.origin.x - r.size.width / 2) && _pointer->getPositionX() < (r.origin.x + r.size.width)) {
 				obj = children->objectAtIndex(index);
-				_selectedObject = dynamic_cast<CCNode *>(obj);
+				_selectedObject = typeinfo_cast<CCNode *>(obj);
 
 				break;
 			}
@@ -767,7 +767,7 @@ public:
 
 		if (_selectedObject == nullptr) {
 			if (_oldActualObject != nullptr) {
-				CCLabelBMFont *txt = dynamic_cast<CCLabelBMFont *>(_oldActualObject->getChildByID("text"));
+				CCLabelBMFont *txt = typeinfo_cast<CCLabelBMFont *>(_oldActualObject->getChildByID("text"));
 				txt->setColor(ccWHITE);
 
 				if (_selectedObjectText) {
@@ -800,11 +800,11 @@ public:
 			engine->playEffect("counter003.ogg", 1.f, 0.5f, 0.5f);
 
 			if (_oldActualObject != nullptr) {
-				CCLabelBMFont *txt = dynamic_cast<CCLabelBMFont *>(_oldActualObject->getChildByID("text"));
+				CCLabelBMFont *txt = typeinfo_cast<CCLabelBMFont *>(_oldActualObject->getChildByID("text"));
 				txt->setColor(ccWHITE);
 			}
 
-			CCLabelBMFont *txt = dynamic_cast<CCLabelBMFont *>(_selectedObject->getChildByID("text"));
+			CCLabelBMFont *txt = typeinfo_cast<CCLabelBMFont *>(_selectedObject->getChildByID("text"));
 			txt->setColor(ccYELLOW);
 
 			_selectedObjectText->setString(txt->getString(), true);
@@ -1020,7 +1020,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		auto ndh_ = pl->getChildByIDRecursive("horror-controller");
 
 		if (ndh_) {
-			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+			auto ndh = typeinfo_cast<HorrorControllerNode *>(ndh_);
 
 			ndh->removeNodesAndCleanup(false);
 			ndh->removeMeAndCleanup();
@@ -1033,7 +1033,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		auto ndh_ = getChildByIDRecursive("horror-controller");
 
 		if (ndh_) {
-			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+			auto ndh = typeinfo_cast<HorrorControllerNode *>(ndh_);
 
 			ndh->removeNodesAndCleanup(true);
 			ndh->removeMeAndCleanup();
@@ -1058,7 +1058,7 @@ class $modify(XPlayLayer, PlayLayer) {
 		} else {
 			auto ndh_ = pl->getChildByIDRecursive("horror-controller");
 
-			ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+			ndh = typeinfo_cast<HorrorControllerNode *>(ndh_);
 
 			RGlobal::inHorrorMode = true;
 		}
@@ -1131,7 +1131,7 @@ class $modify(XPlayLayer, PlayLayer) {
 
 		if (RGlobal::inHorrorMode) {
 			auto ndh_ = getChildByIDRecursive("horror-controller");
-			auto ndh = dynamic_cast<HorrorControllerNode *>(ndh_);
+			auto ndh = typeinfo_cast<HorrorControllerNode *>(ndh_);
 			
 			ndh->playSound();
 			ndh->resetTimer();
