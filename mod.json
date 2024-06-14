@@ -6,7 +6,8 @@
 	"developer": "dogotrigger",
 	"description": "Random event on every attempt",
 	"gd": {
-		"win": "2.206"
+		"win": "2.206",
+		"android": "2.206"
 	},
 	"repository": "https://github.com/SergeyMC9730/roulette",
 	"issues": {
