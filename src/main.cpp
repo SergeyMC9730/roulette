@@ -664,7 +664,7 @@ public:
 
 		addChild(_stopBtnNode);
 
-		_selectedObjectText = CCLabelBMFont::create("(Selected entry would be here.)", "chatFont.fnt");
+		_selectedObjectText = CCLabelBMFont::create("(Selected entry would be shown here.)", "chatFont.fnt");
 		_selectedObjectText->setPositionX(0);
 		_selectedObjectText->setPositionY(_square07->getContentSize().height - _selectedObjectText->getContentSize().height);
 		

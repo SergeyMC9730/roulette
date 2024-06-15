@@ -1,13 +1,12 @@
 {
-	"geode": "3.0.0-alpha.2",
-	"version": "v1.1.5",
+	"geode": "3.0.0-beta.1",
+	"version": "v1.1.6",
 	"id": "dogotrigger.roulette",
 	"name": "Roulette",
 	"developer": "dogotrigger",
 	"description": "Random event on every attempt",
 	"gd": {
-		"win": "2.206",
-		"android": "2.206"
+		"win": "2.206"
 	},
 	"repository": "https://github.com/SergeyMC9730/roulette",
 	"issues": {

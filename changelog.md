@@ -1,3 +1,9 @@
+# v1.1.6
+## Techincal Changes
+ * Minimal Geode version has been switched to `3.0.0-beta.1`
+ * Disabled Android support
+    * While you can still build this release for Android, this mod would just crash on `RouletteObject::checkCollisionWithMenu` for unknown reason.
+
 # v1.1.5
 ## Techincal Changes
  * Minimal Geode version has been switched to `3.0.0-alpha.2`
