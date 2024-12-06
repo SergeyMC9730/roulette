@@ -1,3 +1,7 @@
+# v1.1.7
+## Technical Changes
+ * Minimal Geode version has been switched to `4.0.1`
+
 # v1.1.6
 ## Techincal Changes
  * Minimal Geode version has been switched to `3.0.0-beta.1`
